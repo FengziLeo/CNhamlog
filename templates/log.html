@@ -1,0 +1,238 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>日志管理</h2>
+            <div class="btn-toolbar" role="toolbar">
+                <div class="btn-group me-2" role="group">
+                    <button id="upload-to-lotw" class="btn btn-primary" title="上传日志到LOTW">
+                        <i class="bi bi-upload"></i> 上传至LOTW
+                    </button>
+                    <button id="download-from-lotw" class="btn btn-success" title="从LOTW下载确认记录">
+                        <i class="bi bi-download"></i> LOTW保存至本地
+                    </button>
+                    <button id="check-sync-status" class="btn btn-outline-primary">
+                        <i class="bi bi-info-circle"></i> 同步状态
+                    </button>
+                </div>
+                <div class="btn-group me-2" role="group">
+                    <button id="export-log" class="btn btn-secondary">
+                        <i class="bi bi-download"></i> 导出日志
+                    </button>
+                    <button id="import-log" class="btn btn-info">
+                        <i class="bi bi-upload"></i> 导入日志
+                    </button>
+                </div>
+                <div class="btn-group" role="group">
+                    <button id="edit-selected" class="btn btn-warning" disabled>
+                        <i class="bi bi-pencil"></i> 编辑
+                    </button>
+                    <button id="delete-selected" class="btn btn-danger" disabled>
+                        <i class="bi bi-trash"></i> 删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group mb-3">
+                                <input type="text" id="search-callsign" class="form-control" placeholder="搜索呼号">
+                                <button class="btn btn-outline-secondary" type="button">搜索</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="filter-confirmed">
+                                <label class="form-check-label" for="filter-confirmed">仅显示已确认</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="filter-recent">
+                                <label class="form-check-label" for="filter-recent">最近30天</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="log-table">
+                            <thead>
+                                <tr>
+                                    <th width="40px"><input type="checkbox" id="select-all"></th>
+                                    <th>日期</th>
+                                    <th>时间</th>
+                                    <th>呼号</th>
+                                    <th>频率</th>
+                                    <th>模式</th>
+                                    <th>设备</th>
+                                    <th>天线</th>
+                                    <th>功率</th>
+                                    <th>DXCC</th>
+                                    <th>网格</th>
+                                    <th>省份</th>
+                                    <th>波段</th>
+                                    <th>QSL卡</th>
+                                    <th>备注</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 日志数据将通过JavaScript动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <nav aria-label="日志分页">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item disabled" id="prev-page">
+                                <a class="page-link" href="#" tabindex="-1">上一页</a>
+                            </li>
+                            <li class="page-item" id="next-page">
+                                <a class="page-link" href="#">下一页</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑模态框 -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑记录</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <input type="hidden" id="edit-id">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>呼号</label>
+                                <input type="text" class="form-control" id="edit-callsign" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>频率(MHz)</label>
+                                <input type="number" step="0.001" class="form-control" id="edit-frequency" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>模式</label>
+                                <select class="form-control" id="edit-mode" required>
+                                    <option value="SSB">SSB</option>
+                                    <option value="USB">USB</option>
+                                    <option value="FM">FM</option>
+                                    <option value="CW">CW</option>
+                                    <option value="FT8">FT8</option>
+                                    <option value="FT4">FT4</option>
+                                    <option value="DIGI">DIGI</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>设备</label>
+                                <input type="text" class="form-control" id="edit-equipment">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>天线</label>
+                                <input type="text" class="form-control" id="edit-antenna">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>功率(W)</label>
+                                <input type="number" class="form-control" id="edit-power">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>DXCC</label>
+                                <input type="text" class="form-control" id="edit-dxcc">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>网格</label>
+                                <input type="text" class="form-control" id="edit-grid">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>省份</label>
+                                <input type="text" class="form-control" id="edit-province">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>波段</label>
+                                <input type="text" class="form-control" id="edit-band">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>日期</label>
+                                <input type="date" class="form-control" id="edit-date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>时间</label>
+                                <input type="time" class="form-control" id="edit-time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>QSL卡</label>
+                                <select class="form-control" id="edit-qslcard">
+                                    <option value="0">未发卡</option>
+                                    <option value="1">已发卡</option>
+                                    <option value="2">eyeball</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>备注</label>
+                                <textarea class="form-control" id="edit-notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-changes">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/log_page.js') }}"></script>
+{% endblock %}

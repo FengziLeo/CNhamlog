@@ -1,0 +1,318 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <div class="split-container">
+        <!-- 左侧：添加新日志 -->
+        <div class="form-section">
+            <div>
+                <h2>记录新的QSO</h2>
+                <form id="qso-form" method="POST" action="{{ url_for('new_log') }}">
+                    {{ form.hidden_tag() }}
+                    <div id="form-message" class="alert d-none"></div>
+                    <div class="form-group">
+                        {{ form.callsign.label(class="form-label") }}
+                        <span class="text-danger">*</span>
+                        {{ form.callsign(class="form-control", id="callsign-field", required="required") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.frequency.label(class="form-label") }}
+                        <span class="text-danger">*</span>
+                        {{ form.frequency(class="form-control", required="required") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.mode.label(class="form-label") }}
+                        <span class="text-danger">*</span>
+                        {{ form.mode(class="form-control", required="required") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.equipment.label(class="form-label") }}
+                        {{ form.equipment(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.antenna.label(class="form-label") }}
+                        {{ form.antenna(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.power.label(class="form-label") }}
+                        {{ form.power(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.date.label(class="form-label") }}
+                        <span class="text-danger">*</span>
+                        {{ form.date(class="form-control", required="required") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.time.label(class="form-label") }}
+                        <span class="text-danger">*</span>
+                        <div style="display: flex;">
+                            {{ form.time(class="form-control", id="time-field", required="required") }}
+                            <button class="btn btn-primary" type="button" onclick="setCurrentTime()" style="margin-left: 10px;">当前时间</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control", rows="3") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.dxcc.label(class="form-label") }}
+                        {{ form.dxcc(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.grid.label(class="form-label") }}
+                        {{ form.grid(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.province.label(class="form-label") }}
+                        {{ form.province(class="form-control", id="province-field") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.band.label(class="form-label") }}
+                        {{ form.band(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.qslcard.label(class="form-label") }}
+                        {{ form.qslcard(class="form-control", id="qslcard-field") }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">提交记录</button>
+                        <a href="{{ url_for('log') }}" class="btn btn-outline-secondary">查看日志</a>
+                    </div>
+                </form>
+                
+                <script>
+                document.getElementById('qso-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const form = e.target;
+                    const messageDiv = document.getElementById('form-message');
+                    const qslcardValue = document.getElementById('qslcard-field').value;
+                    
+                    // 验证必填字段
+                    let isValid = true;
+                    const requiredFields = ['callsign', 'frequency', 'mode', 'date', 'time'];
+                    
+                    requiredFields.forEach(field => {
+                        const input = form.querySelector(`[name="${field}"]`);
+                        if (input && (qslcardValue !== '1' || field === 'callsign')) {
+                            if (!input.value.trim()) {
+                                input.classList.add('is-invalid');
+                                isValid = false;
+                            } else {
+                                input.classList.remove('is-invalid');
+                            }
+                        }
+                    });
+                    
+                    if (!isValid) {
+                        messageDiv.textContent = '请填写所有必填字段';
+                        messageDiv.classList.remove('alert-success', 'd-none');
+                        messageDiv.classList.add('alert-danger');
+                        return;
+                    }
+                    
+                    const formData = new FormData(form);
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.success) {
+                            messageDiv.textContent = data.message;
+                            messageDiv.classList.remove('alert-danger', 'd-none');
+                            messageDiv.classList.add('alert-success');
+                            
+                            // 滚动到页面顶部
+                            window.scrollTo({
+                                top: 0,
+                                behavior: 'smooth'
+                            });
+                            
+                            // 清除呼号输入框内容
+                            document.getElementById('callsign-field').value = '';                         
+                        } else {
+                            messageDiv.textContent = data.message || '提交失败';
+                            messageDiv.classList.remove('alert-success', 'd-none');
+                            messageDiv.classList.add('alert-danger');
+                        }
+                    })
+                    .catch(error => {
+                        messageDiv.textContent = '网络错误: ' + error.message;
+                        messageDiv.classList.remove('alert-success', 'd-none');
+                        messageDiv.classList.add('alert-danger');
+                    });
+                });
+                </script>
+            </div>
+        </div>
+
+        <!-- 右侧：历史通联记录 -->
+        <div class="history-section">
+            <div>
+                <h2>历史通联记录</h2>
+                <div id="history-container">
+                    {% if history %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>时间</th>
+                                        <th>频率</th>
+                                        <th>模式</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for qso in history %}
+                                    <tr>
+                                        <td>{{ qso.date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ qso.time }}</td>
+                                        <td>{{ qso.frequency }}</td>
+                                        <td>{{ qso.mode }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; color: #0c5460;">暂无历史通联记录</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hideable-field {
+    transition: all 0.3s ease;
+}
+</style>
+
+<script>
+function setCurrentTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById("time-field").value = `${hours}:${minutes}`;
+}
+
+function toggleFields() {
+    const qslcardValue = document.getElementById("qslcard-field").value;
+    const fieldsToHide = [
+        "frequency", "mode", "equipment", "antenna", 
+        "power", "dxcc", "grid", "province", "band"
+    ];
+    
+    if (qslcardValue === "1") { // Eyeball selected
+        fieldsToHide.forEach(field => {
+            const input = document.getElementById(field);
+            if(input) {
+                const group = input.closest(".form-group");
+                if(group) group.classList.add("d-none");
+                
+                // Set default values for required fields
+                if (field === "frequency") input.value = "0.0";
+                if (field === "power") input.value = "0.0";
+                if (field === "mode") input.value = "UNKNOWN";
+                if (field === "equipment") input.value = "000";
+                if (field === "antenna") input.value = "000";
+            }
+        });
+    } else {
+        fieldsToHide.forEach(field => {
+            const input = document.getElementById(field);
+            if(input) {
+                const group = input.closest(".form-group");
+                if(group) group.classList.remove("d-none");
+            }
+        });
+    }
+}
+
+// Initialize and add event listener
+document.addEventListener("DOMContentLoaded", function() {
+    const qslcardField = document.getElementById("qslcard-field");
+    if(qslcardField) {
+        qslcardField.addEventListener("change", toggleFields);
+        toggleFields(); // Set initial state
+    }
+});
+
+// 监听呼号输入变化，自动查询历史记录
+const callsignField = document.getElementById("callsign-field");
+if(callsignField) {
+    callsignField.addEventListener('input', function() {
+        const callsign = this.value.toUpperCase().trim();
+        if(callsign.length >= 3) {
+            console.log(`正在查询呼号: ${callsign} 的历史记录`);
+            fetch(`/api/history/${encodeURIComponent(callsign)}`)
+                .then(response => {
+                    if(!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('收到历史记录数据:', data);
+                    const container = document.getElementById("history-container");
+                    if(container) {
+                            const records = data && data.data ? data.data : [];
+                            if(records.length > 0) {
+                            let html = `<div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>时间</th>
+                                            <th>频率(MHz)</th>
+                                            <th>模式</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+                            console.log('准备渲染数据:', records); // 调试日志
+                            records.forEach((qso, index) => {
+                                console.log(`处理第${index+1}条记录:`, qso); // 调试日志
+                                // 处理日期格式，兼容GMT格式
+                                let dateStr = 'N/A';
+                                try {
+                                    dateStr = qso.date ? new Date(qso.date).toISOString().split('T')[0] : 'N/A';
+                                } catch(e) {
+                                    console.error('日期解析错误:', e);
+                                }
+                                html += `<tr>
+                                    <td>${dateStr}</td>
+                                    <td>${qso.time || 'N/A'}</td>
+                                    <td>${qso.frequency ? Number(qso.frequency).toFixed(3) : 'N/A'}</td>
+                                    <td>${qso.mode || 'N/A'}</td>
+                                </tr>`;
+                            });
+                            html += `</tbody></table></div>`;
+                            container.innerHTML = html;
+                        } else {
+                            container.innerHTML = '<div class="alert alert-info">暂无历史通联记录</div>';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('获取历史记录失败:', error);
+                    const container = document.getElementById("history-container");
+                    if(container) {
+                        container.innerHTML = `<div class="alert alert-danger">加载历史记录失败: ${error.message}</div>`;
+                    }
+                });
+        } else {
+            const container = document.getElementById("history-container");
+            if(container) {
+                container.innerHTML = '<div class="alert alert-secondary">请输入至少3位呼号</div>';
+            }
+        }
+    });
+}
+</script>
+<script src="{{ url_for('static', filename='js/callsign_province.js') }}"></script>
+{% endblock %}

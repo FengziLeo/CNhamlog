@@ -1,0 +1,5 @@
+Flask>=1.1
+Flask-SQLAlchemy>=2.4
+Flask-WTF>=0.14
+WTForms>=2.3
+mysql-connector-python==8.0.33

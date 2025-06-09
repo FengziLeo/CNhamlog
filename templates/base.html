@@ -1,0 +1,65 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>业余无线电日志记录系统</title>
+    <!-- Bootstrap CSS -->
+    <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .split-layout {
+            height: calc(100vh - 120px);
+        }
+        .form-section {
+            height: 100%;
+            overflow-y: auto;
+        }
+        .history-section {
+            height: 100%;
+            overflow-y: auto;
+        }
+        .footer {
+            font-family: sans-serif;
+            line-height: 1.15;
+            -webkit-text-size-adjust: 100%;
+            --textColor: rgb(255, 237, 237);
+            --textShadow: rgb(127, 80, 80);
+            --contentShadow1: #d9c2c2;
+            --contentShadow2: #ffffff;
+            box-sizing: border-box;
+            --margin-width: 50px;
+            --margin-height: 55px;
+            display: block;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: auto;
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <header class="py-3">
+            <h1>业余无线电日志记录系统</h1>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- JS 依赖 -->
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script>
+        console.log('Bootstrap loaded:', typeof bootstrap !== 'undefined');
+        console.log('jQuery loaded:', typeof jQuery !== 'undefined');
+    </script>
+    <footer class="pos-absolute filter footer">
+        Copyright © <a href="//fz.do">FengziLeo</a> - 丰子磊. All rights reserved.
+    </footer>
+</body>
+</html>
